@@ -467,6 +467,16 @@ class JSONToYAML:
                 json_data.pop( "anyOf" )
                 json_data["nullable"] = True
 
+        # Do a check for singular resource with multiple versions and set link to latest version
+        # E.g. AccelerationFunction.json will remove the idRef link from anyOf and replace with link to latest specific resource
+        if "anyOf" in json_data:
+            if "odata-v4.json#/definitions/idRef" in json_data["anyOf"][0]["$ref"]:
+                lenAnyOf = len(json_data["anyOf"])
+                if lenAnyOf > 1:
+                    # Replace the anyOf with the latest version which will be the highest index in anyOf array
+                    json_data["$ref"] = json_data["anyOf"][lenAnyOf-1]["$ref"]
+                    json_data.pop( "anyOf" )
+
         # Update Resource Collections to remove the anyOf term
         for definition in json_data:
             if self.is_collection( json_data[definition] ):
@@ -527,9 +537,11 @@ class JSONToYAML:
                                     pass
 
                 # If idRef was found, this is a link; otherwise this is another data type (like an enum or an object)
-                if id_ref:
+                # Also check that it is still an "idRef" as may have been replaced with latest version
+                if id_ref and "definitions/idRef" in json_data["$ref"]:
                     json_data["$ref"] = self.odata_schema + "#/components/schemas/odata-v4_idRef"
                 else:
+                    # Otherwise build external reference as other data type (including latest resource objects)
                     json_data["$ref"] = build_external_reference( json_data["$ref"] )
 
         # Perform the same process on all other objects in the structure
