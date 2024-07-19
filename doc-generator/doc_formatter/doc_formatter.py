@@ -203,13 +203,14 @@ class DocFormatter:
             caption = self.formatter.add_table_caption(_("Revision history"));
             reference = self.formatter.add_table_reference(_("The revision history is summarized in "));
             formatted = reference + "\n\n" + formatted + "\n\n" + caption
-        self.this_section['release_history'] = formatted
+        self.this_section['release_history'] = formatted + "\n"
 
 
     def format_uri_block_for_action(self, action, uris):
         """ Create a URI block for this action & the resource's URIs """
-        uri_content = self.formatter.para(self.formatter.bold((_('Action URI: %(link)s') % {'link': '{' + _('Base URI of target resource') + '}/Actions/' + action})))
-        return uri_content
+        uri_header = self.formatter.para(self.formatter.bold(_('Action URI')))
+        uri_content = self.formatter.para('%(link)s' % {'link': self.formatter.italic(_('{Base URI of target resource}')) + '/Actions/' + action})
+        return uri_header + '\n\n' + uri_content
 
 
     def format_uri(self, uri):
@@ -2405,6 +2406,15 @@ class DocFormatter:
                 supplemental = schema_supplement.get(schema_key,
                                                         schema_supplement.get(schema_name, {}))
 
+            if md_supp:
+                for key in ['description', 'jsonpayload', 'property_details', 'action_details']:
+                    if md_supp.get(key) and key not in supplemental:
+                        supplemental[key] = md_supp[key]
+        elif schema_supplement:
+            # Look up supplemental info based solely on the schema reference
+            # This is to work around the fact that common objects are not cached in the property_data structure
+            supplemental = schema_supplement.get(schema_ref, {})
+            md_supp = schema_md_supplement.get(schema_ref)
             if md_supp:
                 for key in ['description', 'jsonpayload', 'property_details', 'action_details']:
                     if md_supp.get(key) and key not in supplemental:

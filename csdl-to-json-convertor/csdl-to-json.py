@@ -424,6 +424,14 @@ class CSDLToJSON:
                                 json_def[name]["uris"] = []
                             json_def[name]["uris"].append( string.text )
 
+                # Deprecated URIs
+                if term == "Redfish.DeprecatedUris":
+                    for collection in child.iter( ODATA_TAG_COLLECTION ):
+                        for string in collection.iter( ODATA_TAG_STRING ):
+                            if "urisDeprecated" not in json_def[name]:
+                                json_def[name]["urisDeprecated"] = []
+                            json_def[name]["urisDeprecated"].append( string.text )
+
     def generate_abstract_object( self, object, json_def ):
         """
         Processes an abstract EntityType or ComplexType to generate the JSON definition structure
@@ -1090,6 +1098,12 @@ class CSDLToJSON:
                 permissions = self.get_attrib( annotation, "EnumMember" )
                 if ( permissions == "OData.Permission/Read" ) or ( permissions == "OData.Permissions/Read" ):
                     json_type_def["readonly"] = True
+                elif ( permissions == "OData.Permission/Write" ) or ( permissions == "OData.Permissions/Write" ):
+                    json_type_def["writeOnly"] = True
+                    json_type_def["readonly"] = False
+                elif ( permissions == "OData.Permission/None" ) or ( permissions == "OData.Permissions/None" ):
+                    json_type_def["writeOnly"] = False
+                    json_type_def["readonly"] = True
                 else:
                     json_type_def["readonly"] = False
 
@@ -1121,6 +1135,10 @@ class CSDLToJSON:
             # Auto Expand
             if term == "OData.AutoExpand":
                 json_type_def["autoExpand"] = True
+
+            # URI Segment
+            if term == "Redfish.URISegment":
+                json_type_def["uriSegment"] = self.get_attrib( annotation, "String" )
 
             # Filter
             if term == "Redfish.Filter":
@@ -1218,19 +1236,19 @@ class CSDLToJSON:
                 json_type = [ "string", "null" ]
             else:
                 json_type = "string"
-            pattern = "-?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?"
+            pattern = "^P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?$"
         elif type == "Edm.TimeOfDay":
             if is_nullable:
                 json_type = [ "string", "null" ]
             else:
                 json_type = "string"
-            pattern = "([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(.[0-9]{1,12})?"
+            pattern = "^([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(.[0-9]{1,12})?$"
         elif type == "Edm.Guid":
             if is_nullable:
                 json_type = [ "string", "null" ]
             else:
                 json_type = "string"
-            pattern = "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+            pattern = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         elif type == "Edm.Boolean":
             if is_nullable:
                 json_type = [ "boolean", "null" ]

@@ -24,7 +24,7 @@ import yaml
 # List of terms that have a simple one to one conversion
 ONE_FOR_ONE_REPLACEMENTS = [ "longDescription", "enumDescriptions", "enumLongDescriptions", "enumDeprecated", "enumVersionDeprecated", "enumVersionAdded",
                              "units", "requiredOnCreate", "owningEntity", "autoExpand", "release", "versionDeprecated", "versionAdded", "filter",
-                             "excerpt", "excerptCopy", "excerptCopyOnly", "translation", "enumTranslations", "language" ]
+                             "excerpt", "excerptCopy", "excerptCopyOnly", "translation", "enumTranslations", "language", "uriSegment" ]
 
 # List of terms that are removed from the file
 REMOVED_TERMS = [ "insertable", "updatable", "deletable", "uris", "parameters", "requiredParameter", "actionResponse" ]
@@ -315,6 +315,9 @@ class JSONToYAML:
                         self.uri_cache[uri]["deprecated"] = deprecated
                         self.uri_cache[uri]["reasonDeprecated"] = deprecated_reason
                         self.uri_cache[uri]["versionDeprecated"] = deprecated_version
+                        # Specific URIs can be deprecated without deprecating the entire schema
+                        if "urisDeprecated" in definition and uri in definition["urisDeprecated"]:
+                            self.uri_cache[uri]["deprecated"] = True
 
     def check_for_actions( self, json_data, filename ):
         """
